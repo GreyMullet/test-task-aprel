@@ -1,0 +1,1 @@
+export { default as SwitchOrientation } from './SwitchOrientation.vue'

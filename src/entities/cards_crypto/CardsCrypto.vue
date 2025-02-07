@@ -1,46 +1,24 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import { Crypto } from "@shared/api"
-import { useSearchValue } from '@app/store'
-import { computed } from 'vue'
+import { useRouter } from 'vue-router';
+import { Crypto } from "@shared/api";
 import { ref } from 'vue';
+import { SwitchOrientation } from '@features/switch_orientation';
+import { useFilteredItems } from '@features/search_currency';
 
 const router=useRouter()
-const searcher=useSearchValue()
-const viewMode=ref('grid')
+const orientationSwitch=ref(null);
 
 const goToKryptoDetail=(kryptoName: string)=>{
   router.push(`/detailed/${kryptoName}`)
 }
 
 const props=defineProps<{ items: Crypto[] }>()
-
-const filteredItems=computed(() => {
-  return props.items.filter(krypto=>{
-    const matchesSearch=krypto.name.toLowerCase().includes(searcher.searchVal.toLowerCase()) ||
-                          krypto.symbol.toLowerCase().includes(searcher.searchVal.toLowerCase())
-    const matchesPrice=(searcher.minPrice==='' || krypto.current_price >= parseFloat(searcher.minPrice)) &&
-                         (searcher.maxPrice==='' || krypto.current_price <= parseFloat(searcher.maxPrice))
-    const matchesMarketCap=(searcher.minMarketCap==='' || krypto.market_cap >= parseFloat(searcher.minMarketCap)) &&
-                             (searcher.maxMarketCap==='' || krypto.market_cap <= parseFloat(searcher.maxMarketCap))
-    const matchesChange=(searcher.minChange==='' || krypto.price_change_percentage_24h >= parseFloat(searcher.minChange)) &&
-                          (searcher.maxChange==='' || krypto.price_change_percentage_24h <= parseFloat(searcher.maxChange))
-    return matchesSearch && matchesPrice && matchesMarketCap && matchesChange
-  })
-})
-
-const toggleViewMode=()=>{
-  viewMode.value=viewMode.value==='grid' ? 'list' : 'grid'
-}
+const { filteredItems }=useFilteredItems(props.items)
 </script>
 
 <template>
-  <div class="view-toggle">
-    <button @click="toggleViewMode">
-      {{ viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View' }}
-    </button>
-  </div>
-  <div :class="['crypto-container', viewMode]">
+  <SwitchOrientation ref="orientationSwitch" />
+  <div :class="['crypto-container', orientationSwitch?.viewMode || 'grid']">
     <div v-for="krypto in filteredItems" :key="krypto.id" class="crypto-card" @click="goToKryptoDetail(krypto.name)">
       <img :src="krypto.image" :alt="krypto.name" class="crypto-image" />
       <div class="crypto-info">
@@ -57,19 +35,6 @@ const toggleViewMode=()=>{
 </template>
 
 <style scoped lang="scss">
-.view-toggle {
-  text-align: right;
-  margin-bottom: 10px;
-
-  button {
-    background: none;
-    border: 1px solid #ccc;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 5px;
-  }
-}
-
 .crypto-container {
   display: flex;
   flex-wrap: wrap;
